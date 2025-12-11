@@ -1,0 +1,9 @@
+/src
+   /components      → Composants réutilisables (Form, Card, etc.)
+   /pages           → Pages principales (Inscription, Connexion, Missions, Profil, Admin, etc.)
+   /services        → Fonctions pour gérer les fichiers JSON (lecture/écriture)
+   /data            → Tes fichiers JSON simulant la BD
+      users.json
+      missions.json
+      messages.json
+   App.js / App.tsx → Point d’entrée

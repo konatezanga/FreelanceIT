@@ -3,9 +3,11 @@ FROM php:8.3-apache
 # Installer dépendances système
 RUN apt-get update && apt-get install -y \
     libpq-dev \
+    libzip-dev \
     unzip \
     git \
-    && docker-php-ext-install pdo pdo_pgsql
+    curl \
+    && docker-php-ext-install pdo pdo_pgsql zip
 
 # Activer mod_rewrite
 RUN a2enmod rewrite
@@ -17,31 +19,29 @@ RUN sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /e
 
 WORKDIR /var/www/html
 
-# Copier juste le composer.json et composer.lock pour installer d'abord les dépendances
-COPY composer.json composer.lock ./
-
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Installer les packages Laravel sans exécuter post-autoload-dump
+# Copier tout d'abord les fichiers nécessaires pour composer
+COPY composer.json composer.lock ./
+
+# Installer les packages Laravel
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-scripts
 
 # Copier tout le projet
 COPY . .
 
-# Copier .env si nécessaire
+# Copier .env.example si .env n'existe pas
 RUN if [ ! -f .env ]; then cp .env.example .env; fi
 
 # Permissions Laravel
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN chown -R www-data:www-data storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
 
-# Exécuter scripts Laravel après que tout est en place
-RUN php artisan key:generate --force
-RUN php artisan migrate --force || true
-RUN php artisan config:clear
-RUN php artisan cache:clear
-RUN php artisan route:clear
-RUN php artisan optimize:clear
-RUN php artisan config:cache
+# Exécuter composer dump-autoload pour générer l'autoloader
+RUN composer dump-autoload --optimize
 
 EXPOSE 80
+
+# Commande de démarrage qui exécute les commandes artisan
+CMD ["sh", "-c", "php artisan key:generate --force && php artisan config:cache && php artisan route:cache && apache2-foreground"]

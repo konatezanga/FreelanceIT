@@ -26,15 +26,23 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Installer dépendances sans les dev-dependencies en production
-RUN composer install --no-dev --optimize-autoloader
+# Désactiver les scripts post-install temporairement
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
-# Exécuter scripts Laravel après que tout est en place
+# Copier .env si disponible, sinon créer un exemple
+RUN if [ -f .env ]; then echo ".env exists"; else cp .env.example .env; fi
+
+# Générer la clé d'application
 RUN php artisan key:generate --force
-RUN php artisan config:clear
-RUN php artisan cache:clear
-RUN php artisan route:clear
-RUN php artisan optimize:clear
-RUN php artisan config:cache
+
+# Exécuter les scripts de découverte de packages
+RUN composer run-script post-autoload-dump
+
+# Nettoyer et optimiser
+RUN php artisan config:clear && \
+    php artisan cache:clear && \
+    php artisan route:clear && \
+    php artisan optimize:clear && \
+    php artisan config:cache
 
 EXPOSE 80

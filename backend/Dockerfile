@@ -34,5 +34,7 @@ RUN php artisan migrate --force || true
 # Nettoyage
 RUN php artisan config:clear
 RUN php artisan config:cache
+RUN php artisan optimize:clear
+RUN php artisan config:cache
 
 EXPOSE 80

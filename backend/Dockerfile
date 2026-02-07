@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.3-apache
 
 # Installer dépendances
 RUN apt-get update && apt-get install -y \
@@ -25,11 +25,12 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-RUN composer install
+
+# Installer dépendances sans les dev-dependencies en production
+RUN composer install --no-dev --optimize-autoloader
 
 # Exécuter scripts Laravel après que tout est en place
 RUN php artisan key:generate --force
-RUN php artisan migrate --force || true
 RUN php artisan config:clear
 RUN php artisan cache:clear
 RUN php artisan route:clear

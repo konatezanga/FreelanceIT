@@ -1,6 +1,6 @@
 FROM php:8.3-apache
 
-# Installer dépendances
+# Installer dépendances système
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     unzip \
@@ -18,22 +18,25 @@ RUN sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /e
 
 WORKDIR /var/www/html
 
+# Copier le projet
 COPY . .
 
 # Permissions Laravel
 RUN chown -R www-data:www-data storage bootstrap/cache
 
+# Copier le fichier .env si nécessaire
+RUN if [ ! -f .env ]; then cp .env.example .env; fi
+
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 RUN composer install --no-dev --optimize-autoloader
 
-# Configurer Laravel
-RUN php artisan key:generate || true
+# Configurer Laravel (clé, migration, cache)
+RUN php artisan key:generate --force
 RUN php artisan migrate --force || true
-
-# Nettoyage
 RUN php artisan config:clear
-RUN php artisan config:cache
+RUN php artisan cache:clear
+RUN php artisan route:clear
 RUN php artisan optimize:clear
 RUN php artisan config:cache
 

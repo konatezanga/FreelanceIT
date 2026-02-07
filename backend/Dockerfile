@@ -38,9 +38,5 @@ RUN php artisan key:generate --force
 # Exécuter les scripts de découverte de packages
 RUN composer run-script post-autoload-dump
 
-# Nettoyer et optimiser
-RUN php artisan config:clear
-RUN php artisan cache:clear
-RUN php artisan config:cache
 
 EXPOSE 80

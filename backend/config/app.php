@@ -127,27 +127,4 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-
-    Application::configure(basePath: dirname(__DIR__))
-        ->withRouting(
-            web: __DIR__ . '/../routes/web.php',
-            api: __DIR__ . '/../routes/api.php',
-            commands: __DIR__ . '/../routes/console.php',
-            health: '/up',
-        )
-        ->withMiddleware(function (Middleware $middleware) {
-            // Assurez-vous que le middleware CORS est bien global
-            $middleware->append([
-                \Illuminate\Http\Middleware\HandleCors::class,
-            ]);
-
-            // Ou spécifiquement pour l'API
-            $middleware->api(prepend: [
-                \Illuminate\Http\Middleware\HandleCors::class,
-            ]);
-        })
-        ->withExceptions(function (Exceptions $exceptions) {
-            //
-        })->create()
-
 ];

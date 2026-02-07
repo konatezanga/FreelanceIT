@@ -5,6 +5,7 @@ RUN apt-get update && apt-get install -y \
     libpq-dev \
     unzip \
     git \
+    postgresql-client \
     && docker-php-ext-install pdo pdo_pgsql
 
 # Activer mod_rewrite
@@ -26,18 +27,22 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Désactiver les scripts post-install temporairement
+# Installer les dépendances
 RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 # Copier .env si disponible, sinon créer un exemple
 RUN if [ -f .env ]; then echo ".env exists"; else cp .env.example .env; fi
 
-# Générer la clé d'application
-RUN php artisan key:generate --force
-RUN php artisan migrate --force
+# Générer la clé d'application (sans force pour éviter les erreurs)
+RUN php artisan key:generate
 
 # Exécuter les scripts de découverte de packages
 RUN composer run-script post-autoload-dump
 
+# Copier l'entrypoint
+COPY entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 80
+
+ENTRYPOINT ["entrypoint.sh"]

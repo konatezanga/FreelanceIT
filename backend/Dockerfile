@@ -31,4 +31,8 @@ RUN composer install --no-dev --optimize-autoloader
 RUN php artisan key:generate || true
 RUN php artisan migrate --force || true
 
+# Nettoyage
+RUN php artisan config:clear
+RUN php artisan config:cache
+
 EXPOSE 80

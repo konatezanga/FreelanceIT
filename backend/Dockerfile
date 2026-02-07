@@ -25,7 +25,7 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 
 # Installer Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
-RUN composer install --no-dev --optimize-autoloader
+RUN composer install
 
 # Exécuter scripts Laravel après que tout est en place
 RUN php artisan key:generate --force

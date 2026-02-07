@@ -34,6 +34,7 @@ RUN if [ -f .env ]; then echo ".env exists"; else cp .env.example .env; fi
 
 # Générer la clé d'application
 RUN php artisan key:generate --force
+RUN php artisan migrate --force
 
 # Exécuter les scripts de découverte de packages
 RUN composer run-script post-autoload-dump

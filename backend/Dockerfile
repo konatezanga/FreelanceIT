@@ -41,8 +41,6 @@ RUN composer run-script post-autoload-dump
 # Nettoyer et optimiser
 RUN php artisan config:clear
 RUN php artisan cache:clear
-RUN php artisan route:clear
-RUN php artisan optimize:clear
 RUN php artisan config:cache
 
 EXPOSE 80

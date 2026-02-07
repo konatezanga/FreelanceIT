@@ -23,6 +23,7 @@ import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 import PropTypes from "prop-types";
 import { MissionsView } from "./MissionsView";
+import { logoutUser } from "../services/api";
 
 
 const menuItems = [
@@ -62,6 +63,18 @@ export function FreelancerDashboard({ onNavigate }) {
   const [activeMenu, setActiveMenu] = useState("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout error", error);
+    } finally {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      onNavigate("landing");
+    }
+  };
+
   const btnInteractive =
     "transition-all duration-300 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm";
 
@@ -78,13 +91,12 @@ export function FreelancerDashboard({ onNavigate }) {
 
         {/* Sidebar */}
         <aside
-          className={`fixed inset-y-0 left-0 z-[60] w-72 bg-white border-r border-border flex flex-col overflow-y-auto transform transition-transform duration-300 md:fixed md:translate-x-0 md:flex md:w-64 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`fixed inset-y-0 left-0 z-[60] w-72 bg-white border-r border-border flex flex-col overflow-y-auto transform transition-transform duration-300 md:fixed md:translate-x-0 md:flex md:w-64 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           {/* Logo */}
           <div className="p-6 flex items-center gap-2">
-              <img
+            <img
               src="/Logo.png"
               alt="Logo FreelanceIT"
               className="w-16 h-16 object-contain"
@@ -126,11 +138,10 @@ export function FreelancerDashboard({ onNavigate }) {
                       setActiveMenu(item.value);
                       setIsSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 focus:outline-none ${
-                      activeMenu === item.value
-                        ? "bg-gradient-to-r from-orange-500 to-green-500 text-white shadow-md scale-[1.02]"
-                        : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
-                    } ${btnInteractive}`}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 focus:outline-none ${activeMenu === item.value
+                      ? "bg-gradient-to-r from-orange-500 to-green-500 text-white shadow-md scale-[1.02]"
+                      : "text-gray-600 hover:text-orange-600 hover:bg-orange-50"
+                      } ${btnInteractive}`}
                   >
                     <item.icon className="w-5 h-5" />
                     <span className="text-sm font-medium">{item.label}</span>
@@ -146,7 +157,7 @@ export function FreelancerDashboard({ onNavigate }) {
             <Button
               variant="outline"
               className={`w-full rounded-xl font-medium ${btnInteractive}`}
-              onClick={() => onNavigate("landing")}
+              onClick={handleLogout}
             >
               Déconnexion
             </Button>
@@ -285,14 +296,14 @@ export function FreelancerDashboard({ onNavigate }) {
                           }
                         }}
                       />
-                      
+
                     </div>
                     <div>
                       <h2 className="text-lg sm:text-xl font-semibold mb-1">Kouassi Amara</h2>
                       <p className="text-muted-foreground mb-2">Développeur Full Stack</p>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
+                      <Button
+                        size="sm"
+                        variant="outline"
                         className={`rounded-full ${btnInteractive}`}
                         onClick={() => document.getElementById('photo-upload')?.click()}
                       >
@@ -334,7 +345,7 @@ export function FreelancerDashboard({ onNavigate }) {
                         {["React", "Node.js", "TypeScript", "MongoDB", "AWS", "Docker"].map((skill) => (
                           <Badge key={skill} variant="secondary" className="flex items-center gap-1">
                             {skill}
-                            <button 
+                            <button
                               className="text-muted-foreground hover:text-destructive ml-1"
                               onClick={() => {
                                 // Logique pour supprimer la compétence
@@ -346,7 +357,7 @@ export function FreelancerDashboard({ onNavigate }) {
                           </Badge>
                         ))}
                       </div>
-                      
+
                       {/* Input pour ajouter une compétence */}
                       <div className="flex gap-2">
                         <Input
@@ -362,9 +373,9 @@ export function FreelancerDashboard({ onNavigate }) {
                           }}
                           className="flex-1"
                         />
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
+                        <Button
+                          variant="outline"
+                          size="sm"
                           className={`rounded-full ${btnInteractive}`}
                           onClick={() => {
                             if (newSkill.trim()) {
@@ -391,74 +402,74 @@ export function FreelancerDashboard({ onNavigate }) {
                 </Card>
               </motion.div>
             )}
-        
+
             {/* Messages Tab */}
             {activeMenu === "messages" && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                          >
-                            <Card className="p-8 sm:p-12 text-center">
-                              <MessageCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground" />
-                              <h3 className="mb-2 text-lg sm:text-xl font-semibold">Messagerie</h3>
-                              <p className="text-muted-foreground mb-6">
-                                Communiquez avec vos clients directement
-                              </p>
-                              <Button
-                                onClick={() => onNavigate("messages")}
-                                className={`bg-gradient-to-r from-primary to-secondary rounded-full font-medium ${btnInteractive} bg-amber-600`}
-                              >
-                                Ouvrir la messagerie
-                              </Button>
-                            </Card>
-                          </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+              >
+                <Card className="p-8 sm:p-12 text-center">
+                  <MessageCircle className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="mb-2 text-lg sm:text-xl font-semibold">Messagerie</h3>
+                  <p className="text-muted-foreground mb-6">
+                    Communiquez avec vos clients directement
+                  </p>
+                  <Button
+                    onClick={() => onNavigate("messages")}
+                    className={`bg-gradient-to-r from-primary to-secondary rounded-full font-medium ${btnInteractive} bg-amber-600`}
+                  >
+                    Ouvrir la messagerie
+                  </Button>
+                </Card>
+              </motion.div>
             )}
-            
+
             {/* Settings Tab */}
             {activeMenu === "settings" && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="max-w-2xl space-y-4"
-                          >
-                            <Card className="p-6">
-                              <h3 className="mb-4 text-lg font-semibold">Paramètres du compte</h3>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label>Email</Label>
-                                  <Input type="email" defaultValue="kouassi.amara@example.com" className="mt-2" />
-                                </div>
-                                <div>
-                                  <Label>Téléphone</Label>
-                                  <Input type="tel" defaultValue="+225 01 02 03 04 05" className="mt-2" />
-                                </div>
-                                <Button className={`bg-gradient-to-r rounded-full font-medium ${btnInteractive}`}>
-                                  Sauvegarder
-                                </Button>
-                              </div>
-                            </Card>
-            
-                            <Card className="p-6">
-                              <h3 className="mb-4 text-lg font-semibold">Sécurité</h3>
-                              <div className="space-y-4">
-                                <div>
-                                  <Label>Mot de passe actuel</Label>
-                                  <Input type="password" className="mt-2" />
-                                </div>
-                                <div>
-                                  <Label>Nouveau mot de passe</Label>
-                                  <Input type="password" className="mt-2" />
-                                </div>
-                                <div>
-                                  <Label>Confirmer le mot de passe</Label>
-                                  <Input type="password" className="mt-2" />
-                                </div>
-                                <Button variant="outline" className={`rounded-full ${btnInteractive}`}>
-                                  Changer le mot de passe
-                                </Button>
-                              </div>
-                            </Card>
-                          </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="max-w-2xl space-y-4"
+              >
+                <Card className="p-6">
+                  <h3 className="mb-4 text-lg font-semibold">Paramètres du compte</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Email</Label>
+                      <Input type="email" defaultValue="kouassi.amara@example.com" className="mt-2" />
+                    </div>
+                    <div>
+                      <Label>Téléphone</Label>
+                      <Input type="tel" defaultValue="+225 01 02 03 04 05" className="mt-2" />
+                    </div>
+                    <Button className={`bg-gradient-to-r rounded-full font-medium ${btnInteractive}`}>
+                      Sauvegarder
+                    </Button>
+                  </div>
+                </Card>
+
+                <Card className="p-6">
+                  <h3 className="mb-4 text-lg font-semibold">Sécurité</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Mot de passe actuel</Label>
+                      <Input type="password" className="mt-2" />
+                    </div>
+                    <div>
+                      <Label>Nouveau mot de passe</Label>
+                      <Input type="password" className="mt-2" />
+                    </div>
+                    <div>
+                      <Label>Confirmer le mot de passe</Label>
+                      <Input type="password" className="mt-2" />
+                    </div>
+                    <Button variant="outline" className={`rounded-full ${btnInteractive}`}>
+                      Changer le mot de passe
+                    </Button>
+                  </div>
+                </Card>
+              </motion.div>
             )}
 
           </div>

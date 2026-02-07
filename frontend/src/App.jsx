@@ -6,7 +6,7 @@ import { MessagingView } from "./components/MessagingView";
 import { MissionsView } from "./components/MissionsView";
 import { FreelancerDashboard } from "./components/FreelancerDashboard";
 import { AuthForm } from "./components/AuthForm";
-import { ClientMessagingView } from "./components/ClientMessagingView"; // Import ajouté
+import { ClientMessagingView } from "./components/ClientMessagingView";
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState("landing");
@@ -36,7 +36,7 @@ export default function App() {
         <FreelancerDashboard onNavigate={navigate} />
       )}
       {currentPage === "auth" && <AuthForm onNavigate={navigate} />}
-      
+
       {/* Nouvelle page de messagerie client */}
       {currentPage === "ClientMessagingView" && (
         <ClientMessagingView onNavigate={navigate} />

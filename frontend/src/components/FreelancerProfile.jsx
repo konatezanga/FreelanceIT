@@ -8,23 +8,11 @@ import { Badge } from "./ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 export function FreelancerProfile({ onNavigate, freelancer }) {
-  const profile = freelancer || {
-    name: "Kouassi Amara",
-    photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amara",
-    specialty: "Développeur Full Stack",
-    rating: 4.9,
-    reviews: 47,
-    hourlyRate: "15,000",
-    dailyRate: "100,000",
-    skills: ["React", "Node.js", "TypeScript", "MongoDB", "AWS", "Docker", "PostgreSQL", "GraphQL"],
-    alumni: "INPHB - Institut National Polytechnique Houphouët-Boigny",
-    location: "Abidjan, Côte d'Ivoire",
-    experience: "5+ ans",
-    available: true,
-    bio: "Développeur passionné avec plus de 5 ans d'expérience dans le développement d'applications web modernes. Spécialisé en React et Node.js, j'aide les entreprises à digitaliser leurs processus avec des solutions robustes et évolutives.",
-    completedProjects: 24,
-    responseTime: "Quelques heures"
-  };
+  if (!freelancer) {
+    return <div className="p-10 text-center">Aucun profil sélectionné. <Button onClick={() => onNavigate('catalog')}>Retour</Button></div>;
+  }
+
+  const profile = freelancer;
 
   const handleContact = () => {
     onNavigate("ClientMessagingView", { freelancer: profile });
@@ -47,8 +35,8 @@ export function FreelancerProfile({ onNavigate, freelancer }) {
       <div className="container mx-auto px-4 py-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Sidebar */}
-          <motion.div 
-            initial={{ opacity: 0, x: -20 }} 
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             className="lg:col-span-1 space-y-6"
           >
@@ -104,16 +92,16 @@ export function FreelancerProfile({ onNavigate, freelancer }) {
 
               {/* Actions */}
               <div className="space-y-3">
-                <Button 
+                <Button
                   onClick={handleContact}
                   className="w-full bg-gradient-to-r from-orange-500 to-green-600 hover:from-orange-600 hover:to-green-700 text-white rounded-xl py-3 font-semibold shadow-lg transition-all duration-200 hover:shadow-xl"
                 >
                   <MessageCircle className="w-5 h-5 mr-2" />
                   Contacter
                 </Button>
-                <Button 
+                <Button
                   onClick={handleContact}
-                  variant="outline" 
+                  variant="outline"
                   className="w-full rounded-xl py-3 border-2 border-gray-300 hover:border-orange-500 hover:bg-orange-50 text-gray-700 font-semibold transition-all duration-200"
                 >
                   Proposer une mission
@@ -123,9 +111,9 @@ export function FreelancerProfile({ onNavigate, freelancer }) {
           </motion.div>
 
           {/* Main Content */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
             className="lg:col-span-2 space-y-6"
           >
             {/* En-tête avec navigation */}
@@ -158,9 +146,9 @@ export function FreelancerProfile({ onNavigate, freelancer }) {
                         </h3>
                         <div className="flex flex-wrap gap-3">
                           {profile.skills.map((skill) => (
-                            <Badge 
-                              key={skill} 
-                              variant="secondary" 
+                            <Badge
+                              key={skill}
+                              variant="secondary"
                               className="px-4 py-2 text-sm bg-gradient-to-r from-orange-100 to-green-100 text-gray-800 border-0 shadow-sm hover:shadow-md transition-shadow"
                             >
                               {skill}

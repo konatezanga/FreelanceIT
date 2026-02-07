@@ -1,16 +1,113 @@
 // eslint-disable-next-line no-unused-vars
 import { motion } from "motion/react";
 import { useState } from "react";
-import { ArrowLeft, Code, User, Briefcase } from "lucide-react";
+import { ArrowLeft, Code, User, Briefcase, AlertCircle } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Card } from "./ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { Alert, AlertDescription } from "./ui/alert";
+import { loginUser, registerUser } from "../services/api";
 
 export function AuthForm({ onNavigate }) {
   const [userType, setUserType] = useState(null); // "client" | "freelance"
   const [authMode, setAuthMode] = useState("login");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  // Form states
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [registerData, setRegisterData] = useState({
+    firstname: "",
+    lastname: "",
+    email: "",
+    phone: "",
+    password: "",
+    password_confirmation: "",
+    institution: "", // For freelance
+    company_name: "", // For client
+  });
+
+  const handleLogin = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      // Simulation d'un délai de 2 secondes
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const data = await loginUser(loginData);
+      // Stocker le token et user info (api.js stocke déjà le token dans localStorage si on modifie api.js pour le faire,
+      // mais ici api.js renvoie juste les data. On doit gérer le stockage du token ici ou dans api.js.
+      // On va modifier api.js pour gérer le localStorage ou faisons-le ici.
+      // Pour l'instant, faisons-le ici simple.
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      if (data.user.role === "freelance") {
+        onNavigate("dashboard");
+      } else {
+        onNavigate("catalog");
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Email ou mot de passe incorrect.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      // Simulation d'un délai de 1 secondes
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      if (registerData.password !== registerData.password_confirmation) {
+        setError("Les mots de passe ne correspondent pas.");
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        ...registerData,
+        role: userType,
+      };
+
+      const data = await registerUser(payload);
+      localStorage.setItem('auth_token', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      if (userType === "freelance") {
+        onNavigate("dashboard");
+      } else {
+        onNavigate("catalog");
+      }
+    } catch (err) {
+      console.error("Registration error details:", err);
+      if (err.response) {
+        console.error("Response data:", err.response.data);
+        console.error("Response status:", err.response.status);
+        if (err.response.data && err.response.data.errors) {
+          // Affiche la première erreur trouvée
+          const firstError = Object.values(err.response.data.errors)[0][0];
+          setError(firstError);
+        } else {
+          setError(`Erreur serveur: ${err.response.status}`);
+        }
+      } else if (err.request) {
+        console.error("No response received:", err.request);
+        setError("Impossible de contacter le serveur. Vérifiez votre connexion.");
+      } else {
+        console.error("Error setting up request:", err.message);
+        setError("Erreur interne de l'application.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   // === CHOIX ENTRE CLIENT ET FREELANCE ===
   if (!userType) {
@@ -160,13 +257,20 @@ export function AuthForm({ onNavigate }) {
             </h2>
             <p className="text-sm text-gray-500">
               {authMode === "login"
-                ? "Connectez-vous pour continuer votre mission"
-                : "Créez votre profil et démarrez votre parcours"}
+                ? "Connectez-vous à votre compte"
+                : "Créez votre profil en quelques clics"}
             </p>
           </div>
 
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           {/* === Onglets === */}
-          <Tabs value={authMode} onValueChange={(v) => setAuthMode(v)} className="mb-6">
+          <Tabs value={authMode} onValueChange={(v) => { setAuthMode(v); setError(""); }} className="mb-6">
             <TabsList className="grid w-full grid-cols-2 bg-gray-100 rounded-full p-1">
               <TabsTrigger value="login" className="rounded-full text-gray-700">
                 Connexion
@@ -180,19 +284,30 @@ export function AuthForm({ onNavigate }) {
             <TabsContent value="login" className="space-y-4 mt-6">
               <div>
                 <Label>Email</Label>
-                <Input type="email" placeholder="votre@email.com" className="mt-2 rounded-xl" />
+                <Input
+                  type="email"
+                  placeholder="votre@email.com"
+                  className="mt-2 rounded-xl"
+                  value={loginData.email}
+                  onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
+                />
               </div>
               <div>
                 <Label>Mot de passe</Label>
-                <Input type="password" placeholder="••••••••" className="mt-2 rounded-xl" />
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  className="mt-2 rounded-xl"
+                  value={loginData.password}
+                  onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
+                />
               </div>
               <Button
-                onClick={() =>
-                  userType === "freelance" ? onNavigate("dashboard") : onNavigate("catalog")
-                }
+                onClick={handleLogin}
+                disabled={loading}
                 className="w-full bg-gradient-to-r from-orange-500 to-green-500 text-white font-semibold py-2 rounded-full hover:shadow-lg transition"
               >
-                Se connecter
+                {loading ? "Connexion..." : "Se connecter"}
               </Button>
               <Button variant="link" className="w-full text-sm text-gray-500">
                 Mot de passe oublié ?
@@ -204,38 +319,94 @@ export function AuthForm({ onNavigate }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Prénom</Label>
-                  <Input placeholder="Kouassi" className="mt-2 rounded-xl" />
+                  <Input
+                    placeholder="Kouassi"
+                    className="mt-2 rounded-xl"
+                    value={registerData.firstname}
+                    onChange={(e) => setRegisterData({ ...registerData, firstname: e.target.value })}
+                  />
                 </div>
                 <div>
                   <Label>Nom</Label>
-                  <Input placeholder="Amara" className="mt-2 rounded-xl" />
+                  <Input
+                    placeholder="Amara"
+                    className="mt-2 rounded-xl"
+                    value={registerData.lastname}
+                    onChange={(e) => setRegisterData({ ...registerData, lastname: e.target.value })}
+                  />
                 </div>
               </div>
               <div>
                 <Label>Email</Label>
-                <Input type="email" placeholder="votre@email.com" className="mt-2 rounded-xl" />
+                <Input
+                  type="email"
+                  placeholder="votre@email.com"
+                  className="mt-2 rounded-xl"
+                  value={registerData.email}
+                  onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                />
               </div>
               <div>
                 <Label>Téléphone</Label>
-                <Input type="tel" placeholder="+225 01 02 03 04 05" className="mt-2 rounded-xl" />
+                <Input
+                  type="tel"
+                  placeholder="+225 01 02 03 04 05"
+                  className="mt-2 rounded-xl"
+                  value={registerData.phone}
+                  onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                />
               </div>
+
               {userType === "freelance" && (
                 <div>
                   <Label>Établissement / Alumni</Label>
-                  <Input placeholder="INPHB, ESATIC, ESI..." className="mt-2 rounded-xl" />
+                  <Input
+                    placeholder="INPHB, ESATIC, ESI..."
+                    className="mt-2 rounded-xl"
+                    value={registerData.institution}
+                    onChange={(e) => setRegisterData({ ...registerData, institution: e.target.value })}
+                  />
                 </div>
               )}
+              {userType === "client" && (
+                <div>
+                  <Label>Nom de l'entreprise (Optionnel)</Label>
+                  <Input
+                    placeholder="Ma Société SARL"
+                    className="mt-2 rounded-xl"
+                    value={registerData.company_name}
+                    onChange={(e) => setRegisterData({ ...registerData, company_name: e.target.value })}
+                  />
+                </div>
+              )}
+
               <div>
                 <Label>Mot de passe</Label>
-                <Input type="password" placeholder="••••••••" className="mt-2 rounded-xl" />
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  className="mt-2 rounded-xl"
+                  value={registerData.password}
+                  onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                />
               </div>
+              <div>
+                <Label>Confirmer le mot de passe</Label>
+                <Input
+                  type="password"
+                  placeholder="••••••••"
+                  className="mt-2 rounded-xl"
+                  value={registerData.password_confirmation}
+                  onChange={(e) => setRegisterData({ ...registerData, password_confirmation: e.target.value })}
+                />
+              </div>
+
               <Button
-                onClick={() =>
-                  userType === "freelance" ? onNavigate("dashboard") : onNavigate("catalog")
-                }
+                onClick={handleRegister}
+                disabled={loading}
                 className="w-full bg-gradient-to-r from-green-500 to-orange-500 text-white font-semibold py-2 rounded-full hover:shadow-lg transition"
               >
-                Créer mon compte
+                {loading ? "Création..." : "Créer mon compte"}
               </Button>
               <p className="text-xs text-center text-gray-500">
                 En vous inscrivant, vous acceptez nos conditions d'utilisation

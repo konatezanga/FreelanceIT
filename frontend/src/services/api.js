@@ -1,116 +1,98 @@
-const API_URL = "http://localhost:5000"; // L'adresse de json-server
+import axios from 'axios';
 
-// ---------------------- USERS ----------------------
+const api = axios.create({
+  baseURL: 'http://127.0.0.1:8000/api',
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+  },
+});
 
-// Inscription
-export async function registerUser(userData) {
-  const res = await fetch(`${API_URL}/users`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(userData),
-  });
-  return res.json();
+// Intercepteur pour ajouter le token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// un intercepteur pour les erreurs
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('Erreur API:', {
+      URL: error.config?.url,
+      Status: error.response?.status,
+      Message: error.response?.data?.message || error.message,
+      Data: error.response?.data
+    });
+
+    // Afficher l'erreur complète en développement
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Détails complets:', error);
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// --- AUTH ---
+export const registerUser = async (userData) => {
+  const response = await api.post('/register', userData);
+  return response.data;
+};
+
+export const loginUser = async (credentials) => {
+  const response = await api.post('/login', credentials);
+  return response.data;
+};
+
+export const logoutUser = async () => {
+  const response = await api.post('/logout');
+  return response.data;
+};
+
+export const getCurrentUser = async () => {
+  const response = await api.get('/user');
+  return response.data;
+};
+
+// --- USERS (Public / Catalog) ---
+export const getFreelancers = async (filters = {}) => {
+  const params = { role: 'freelance', ...filters };
+  const response = await api.get('/users', { params });
+  return response.data;
+};
+
+// --- MISSIONS ---
+export const getMissions = async () => {
+  const response = await api.get('/missions');
+  return response.data;
+};
+
+export const createMission = async (missionData) => {
+  const response = await api.post('/missions', missionData);
+  return response.data;
+};
+
+// --- MESSAGES ---
+export const getMessages = async () => {
+  const response = await api.get('/messages');
+  return response.data;
 }
 
-// Connexion (simulée)
-export async function loginUser(email, password) {
-  const res = await fetch(`${API_URL}/users?email=${email}&password=${password}`);
-  const data = await res.json();
-  return data.length > 0 ? data[0] : null; // retourne l'utilisateur s'il existe
+export const sendMessage = async (messageData) => {
+  const response = await api.post('/messages', messageData);
+  return response.data;
 }
 
-// Récupérer tous les utilisateurs
-export async function getUsers() {
-  const res = await fetch(`${API_URL}/users`);
-  return res.json();
+// --- PROFILE ---
+export const updateProfile = async (data) => {
+  // Met à jour le user ou le profil spécifique
+  const response = await api.put('/user/profile', data);
+  return response.data;
 }
 
-// Mettre à jour un utilisateur (profil)
-export async function updateUser(id, updatedData) {
-  const res = await fetch(`${API_URL}/users/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updatedData),
-  });
-  return res.json();
-}
 
-// Supprimer un utilisateur (admin)
-export async function deleteUser(id) {
-  await fetch(`${API_URL}/users/${id}`, { method: "DELETE" });
-  return true;
-}
-
-// Rechercher un freelance par compétence / domaine / alumni
-export async function searchFreelancers({ competence, domaine, alumni }) {
-  let query = `${API_URL}/users?role=freelancer`;
-  if (competence) query += `&competence=${competence}`;
-  if (domaine) query += `&domaine=${domaine}`;
-  if (alumni) query += `&alumni=${alumni}`;
-  const res = await fetch(query);
-  return res.json();
-}
-
-// ---------------------- MISSIONS ----------------------
-
-// Publier une mission
-export async function addMission(mission) {
-  const res = await fetch(`${API_URL}/missions`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(mission),
-  });
-  return res.json();
-}
-
-// Récupérer toutes les missions
-export async function getMissions() {
-  const res = await fetch(`${API_URL}/missions`);
-  return res.json();
-}
-
-// Supprimer une mission (admin)
-export async function deleteMission(id) {
-  await fetch(`${API_URL}/missions/${id}`, { method: "DELETE" });
-  return true;
-}
-
-// ---------------------- MESSAGES ----------------------
-
-// Récupérer les messages
-export async function getMessages() {
-  const res = await fetch(`${API_URL}/messages`);
-  return res.json();
-}
-
-// Envoyer un message
-export async function sendMessage(message) {
-  const res = await fetch(`${API_URL}/messages`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(message),
-  });
-  return res.json();
-}
-
-// ---------------------- ADMIN ----------------------
-
-// Valider / modifier une mission
-export async function updateMission(id, updatedData) {
-  const res = await fetch(`${API_URL}/missions/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updatedData),
-  });
-  return res.json();
-}
-
-// Obtenir stats admin (exemple : nb utilisateurs / nb missions)
-export async function getAdminStats() {
-  const users = await getUsers();
-  const missions = await getMissions();
-  return {
-    totalUsers: users.length,
-    totalMissions: missions.length,
-  };
-}
+export default api;

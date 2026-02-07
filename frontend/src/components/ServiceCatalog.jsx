@@ -12,6 +12,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
 import { LogOut } from 'lucide-react';
+import { ClientProfile } from "./ClientProfile";
+import { getMissions, getFreelancers, createMission, logoutUser } from "../services/api";
+import { useEffect } from "react";
 
 export function ServiceCatalog({ onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -25,80 +28,51 @@ export function ServiceCatalog({ onNavigate }) {
   const today = new Date().toISOString().split("T")[0];
 
   // Missions de l'utilisateur client
-  const [userMissions, setUserMissions] = useState([
-    {
-      id: 1,
-      title: "Développement site e-commerce",
-      description: "Création d'une plateforme de vente en ligne avec paiement intégré",
-      budget: "200000",
-      deadline: "2024-12-31",
-      status: "active",
-      date: "2024-01-15"
-    },
-    {
-      id: 2,
-      title: "Application mobile de livraison",
-      description: "Développement d'une app de livraison rapide avec suivi en temps réel",
-      budget: "350000",
-      deadline: "2024-11-30",
-      status: "active",
-      date: "2024-01-10"
-    },
-    {
-      id: 3,
-      title: "Refonte site vitrine",
-      description: "Modernisation d'un site web existant avec design responsive",
-      budget: "80000",
-      deadline: "2024-10-15",
-      status: "completed",
-      date: "2024-01-05"
-    }
-  ]);
+  const [userMissions, setUserMissions] = useState([]);
+  const [freelancers, setFreelancers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const freelancers = [
-    {
-      id: 1,
-      name: "Kouassi Amara",
-      photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Amara",
-      specialty: "Développeur Full Stack",
-      hourlyRate: "15,000",
-      dailyRate: "100,000",
-      skills: ["React", "Node.js", "TypeScript", "MongoDB", "AWS", "Docker"],
-      alumni: "INPHB - Institut National Polytechnique Houphouët-Boigny",
-      location: "Abidjan, Côte d'Ivoire",
-      experience: "5+ ans",
-      available: true,
-      bio: "Développeur passionné avec plus de 5 ans d'expérience dans le développement d'applications web modernes. Spécialisé en React et Node.js, j'aide les entreprises à digitaliser leurs processus.",
-    },
-    {
-      id: 2,
-      name: "Adjoua Koffi",
-      photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Adjoua",
-      specialty: "Designer UI/UX",
-      hourlyRate: "12,000",
-      dailyRate: "80,000",
-      skills: ["Figma", "Adobe XD", "Prototyping", "User Research"],
-      alumni: "ESI",
-      location: "Abidjan, Côte d'Ivoire",
-      experience: "3+ ans",
-      available: true,
-      bio: "Designer UI/UX créative avec une passion pour la conception d'interfaces intuitives et esthétiques.",
-    },
-    {
-      id: 3,
-      name: "Yao Christophe",
-      photo: "https://api.dicebear.com/7.x/avataaars/svg?seed=Yao",
-      specialty: "Développeur Mobile",
-      hourlyRate: "18,000",
-      dailyRate: "120,000",
-      skills: ["Flutter", "React Native", "iOS", "Android"],
-      alumni: "ESATIC",
-      location: "Abidjan, Côte d'Ivoire",
-      experience: "4+ ans",
-      available: false,
-      bio: "Développeur mobile expérimenté spécialisé dans les applications cross-platform.",
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // En parallèle
+      const [missionsData, freelancersData] = await Promise.all([
+        getMissions(),
+        getFreelancers()
+      ]);
+
+      setUserMissions(missionsData);
+
+      const freelancersList = Array.isArray(freelancersData) ? freelancersData : [];
+      const mappedFreelancers = freelancersList.map(u => {
+        const profile = u.freelancer_profile || {};
+        return {
+          id: u.id,
+          name: `${u.firstname} ${u.lastname}`,
+          photo: u.profile_photo_path || `https://api.dicebear.com/7.x/avataaars/svg?seed=${u.firstname}`,
+          specialty: profile.institution || "Freelance",
+          hourlyRate: profile.hourly_rate || "N/A",
+          dailyRate: profile.daily_rate || "N/A",
+          skills: profile.skills || [],
+          alumni: profile.institution,
+          available: profile.availability !== undefined ? profile.availability : true,
+          bio: profile.bio || "Aucune bio disponible.",
+          email: u.email,
+          phone: u.phone
+        };
+      });
+      setFreelancers(mappedFreelancers);
+
+    } catch (error) {
+      console.error("Erreur chargement données", error);
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -124,21 +98,35 @@ export function ServiceCatalog({ onNavigate }) {
     }
     setSubmitting(true);
     try {
-      await new Promise((res) => setTimeout(res, 800));
-      const newMission = {
-        id: userMissions.length + 1,
-        ...form,
-        status: "active",
-        applicants: 0,
-        date: new Date().toISOString().split("T")[0]
-      };
-      setUserMissions([newMission, ...userMissions]);
+      if (selectedMission) {
+        console.log("Update logic to implement");
+      } else {
+        const newMission = await createMission(form);
+        setUserMissions([newMission, ...userMissions]);
+      }
+
       setPublishOpen(false);
       setForm({ title: "", description: "", budget: "", deadline: "" });
       setErrors({});
       setSelectedMission(null);
+      fetchData(); // Refresh list
+    } catch (err) {
+      console.error("Error creating mission", err);
+      setErrors({ form: "Erreur lors de la création de la mission" });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout error", error);
+    } finally {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      onNavigate("landing");
     }
   };
 
@@ -169,24 +157,23 @@ export function ServiceCatalog({ onNavigate }) {
     onNavigate("ClientMessagingView");
   };
 
-  const filteredFreelancers = freelancers.filter(freelancer => 
-    searchQuery === "" || 
+  const filteredFreelancers = freelancers.filter(freelancer =>
+    searchQuery === "" ||
     freelancer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     freelancer.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
     freelancer.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase()))
   );
-//eslint-disable-next-line no-unused-vars
+  //eslint-disable-next-line no-unused-vars
   const NavigationItem = ({ view, icon: Icon, label, isActive }) => (
     <button
       onClick={() => {
         setActiveView(view);
         setMobileMenuOpen(false);
       }}
-      className={`flex items-center gap-3 w-full p-3 rounded-lg transition-colors ${
-        isActive 
-          ? 'bg-gradient-to-r from-orange-500 to-green-600 text-white' 
-          : 'text-gray-700 hover:bg-gray-100'
-      }`}
+      className={`flex items-center gap-3 w-full p-3 rounded-lg transition-colors ${isActive
+        ? 'bg-gradient-to-r from-orange-500 to-green-600 text-white'
+        : 'text-gray-700 hover:bg-gray-100'
+        }`}
     >
       <Icon className="w-5 h-5" />
       <span className="font-medium">{label}</span>
@@ -200,16 +187,16 @@ export function ServiceCatalog({ onNavigate }) {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="md:hidden"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               >
                 {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </Button>
 
-              <Button variant="ghost" onClick={() => onNavigate("landing")} className="flex bg-orange-100 text-orange-600 hover:bg-orange-200">
+              <Button variant="ghost" onClick={handleLogout} className="flex bg-orange-100 text-orange-600 hover:bg-orange-200">
                 <LogOut className="w-4 h-4 mr-2" />
                 <span className="hidden sm:inline">Déconnexion</span>
               </Button>
@@ -337,7 +324,8 @@ export function ServiceCatalog({ onNavigate }) {
               <nav className="space-y-2">
                 <NavigationItem view="missions" icon={Briefcase} label="Mes Missions" isActive={activeView === "missions"} />
                 <NavigationItem view="recherche" icon={Search} label="Rechercher" isActive={activeView === "recherche"} />
-                
+                <NavigationItem view="profile" icon={User} label="Mon Profil" isActive={activeView === "profile"} />
+
                 {/* Bouton pour ouvrir la messagerie complète */}
                 <button
                   onClick={handleOpenMessaging}
@@ -346,7 +334,7 @@ export function ServiceCatalog({ onNavigate }) {
                   <MessageCircle className="w-5 h-5" />
                   <span className="font-medium">Messagerie</span>
                 </button>
-                
+
                 <Button onClick={() => setPublishOpen(true)} className="w-full bg-orange-500 text-white mt-4">
                   <Plus className="w-4 h-4 mr-2" />
                   Publier une mission
@@ -364,7 +352,8 @@ export function ServiceCatalog({ onNavigate }) {
                   <nav className="space-y-2">
                     <NavigationItem view="missions" icon={Briefcase} label="Mes Missions" isActive={activeView === "missions"} />
                     <NavigationItem view="recherche" icon={Search} label="Rechercher" isActive={activeView === "recherche"} />
-                    
+                    <NavigationItem view="profile" icon={User} label="Mon Profile" isActive={activeView === "ClientProfile"} />
+
                     {/* Bouton pour ouvrir la messagerie complète */}
                     <button
                       onClick={handleOpenMessaging}
@@ -373,7 +362,7 @@ export function ServiceCatalog({ onNavigate }) {
                       <MessageCircle className="w-5 h-5" />
                       <span className="font-medium">Messagerie</span>
                     </button>
-                    
+
                     <Button onClick={() => setPublishOpen(true)} className="w-full bg-gradient-to-r from-orange-500 to-green-600 text-white mt-2">
                       <Plus className="w-4 h-4 mr-2" />
                       Publier une mission
@@ -494,7 +483,7 @@ export function ServiceCatalog({ onNavigate }) {
                             <p className="text-gray-600 text-sm">{freelancer.specialty}</p>
                           </div>
                         </div>
-                        
+
                         <div className="flex flex-wrap gap-1 mb-4">
                           {freelancer.skills.slice(0, 3).map((skill) => (
                             <Badge key={skill} variant="secondary" className="text-xs">{skill}</Badge>
@@ -538,6 +527,10 @@ export function ServiceCatalog({ onNavigate }) {
                   </Card>
                 )}
               </motion.div>
+            )}
+
+            {activeView === "profile" && (
+              <ClientProfile onNavigate={onNavigate} />
             )}
           </main>
         </div>
